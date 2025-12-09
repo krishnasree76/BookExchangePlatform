@@ -38,16 +38,16 @@ const upload = multer({
 });
 
 // Connect to MongoDB for user data
-const userDB = mongoose.createConnection("mongodb://127.0.0.1:27017/userdb", {
+const userDB = mongoose.createConnection(process.env.MONGO_URI_USER, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-// Connect to MongoDB for book data
-const bookDB = mongoose.createConnection("mongodb://127.0.0.1:27017/bookdb", {
+const bookDB = mongoose.createConnection(process.env.MONGO_URI_BOOK, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
+
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -474,6 +474,4 @@ app.use((req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
