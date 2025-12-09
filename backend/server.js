@@ -289,90 +289,74 @@ app.put('/api/user/:username', async (req, res) => {
 });
 
 // Purchase Book Endpoint (Backend)
+// Purchase Book Endpoint (Backend)
 app.post("/api/buy-book", async (req, res) => {
   const { user, bookId } = req.body;
 
-  // Input validation
   if (!user || !bookId) {
     return res.status(400).json({ message: "User and Book ID are required." });
   }
 
   try {
-    // Step 1: Fetch the book by ID
+    // Step 1: Find book
     const book = await Book.findById(bookId);
-    if (!book) {
-      console.error(`Book not found: ${bookId}`);
-      return res.status(404).json({ message: "Book not found." });
-    }
-    
-    console.log("Book found:", book);
+    if (!book) return res.status(404).json({ message: "Book not found." });
 
-    // Step 2: Fetch the buyer (user)
+    // Step 2: Find buyer
     const userData = await User.findOne({ username: user });
-    if (!userData) {
-      console.error(`User not found: ${user}`);
-      return res.status(404).json({ message: "User not found." });
-    }
-    console.log("User found:", userData);
+    if (!userData) return res.status(404).json({ message: "User not found." });
 
-    // Step 3: Fetch the seller
+    // Step 3: Find seller
     const seller = await User.findOne({ username: book.seller });
-    if (!seller) {
-      console.error(`Seller not found for book: ${bookId}`);
-      return res.status(404).json({ message: "Seller not found for the book." });
-    }
-    console.log("Seller found:", seller);
+    if (!seller) return res.status(404).json({ message: "Seller not found." });
 
-    // Step 4: Add the book to the user's purchasedBooks array
-    userData.purchasedBooks = userData.purchasedBooks || [];
+    // Step 4: Add purchased book
     userData.purchasedBooks.push(bookId);
     await userData.save();
-    console.log("Book added to user's purchasedBooks array.");
 
-    // Step 5: Prepare email content
+    // Step 5: Email content
     const sellerEmailText = `
       Hello, ${seller.username}!
-      
-      You have sold the following book:
-      
+
+      You have sold:
       - ${book.bookName}
-      
-      Buyer details:
+
+      Buyer:
       Name: ${userData.username}
       Phone: ${userData.mobileNumber}
-      
-      Thank you for using our platform!
     `;
 
     const buyerEmailText = `
       Hello, ${userData.username}!
-      
-      You have successfully purchased the following book:
-      
+
+      You purchased:
       - ${book.bookName}
-      
-      Seller details:
+
+      Seller:
       Name: ${seller.username}
       Phone: ${seller.mobileNumber}
-      
-      Thank you for your purchase!
     `;
 
-    // Step 6: Send emails
-    // Step 6: Try sending emails (but ignore errors)
-// Step 6: Try sending emails (but allow purchase even if email fails)
-try {
-  await sendEmail(seller.email, "Book Sale Notification", sellerEmailText);
-  await sendEmail(userData.email, "Purchase Confirmation", buyerEmailText);
-  console.log("Emails sent.");
-} catch (emailError) {
-  console.error("Email failed but purchase will continue:", emailError.message);
-}
+    // Step 6: Try sending email (ignore if fails)
+    try {
+      await sendEmail(seller.email, "Book Sale Notification", sellerEmailText);
+      await sendEmail(userData.email, "Purchase Confirmation", buyerEmailText);
+      console.log("Emails sent.");
+    } catch (emailError) {
+      console.error("Email failed but purchase continues:", emailError.message);
+    }
 
-// Step 7: Send success response ALWAYS
-return res.json({
-  message: "Book purchase successful! (Email delivery may have failed)"
+    // Final response
+    return res.json({
+      message: "Book purchase successful! (Email may have failed)"
+    });
+
+  } catch (error) {
+    console.error("Error processing purchase:", error);
+    return res.status(500).json({ message: "Error processing purchase." });
+  }
 });
+
 
 
 app.post('/api/exchange-book-request', async (req, res) => {
