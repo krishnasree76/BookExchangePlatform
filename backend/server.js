@@ -359,18 +359,22 @@ app.post("/api/buy-book", async (req, res) => {
     `;
 
     // Step 6: Send emails
-    await sendEmail(seller.email, "Book Sale Notification", sellerEmailText);
-    await sendEmail(userData.email, "Purchase Confirmation", buyerEmailText);
-    console.log("Emails sent to both buyer and seller.");
+    // Step 6: Try sending emails (but ignore errors)
+// Step 6: Try sending emails (but allow purchase even if email fails)
+try {
+  await sendEmail(seller.email, "Book Sale Notification", sellerEmailText);
+  await sendEmail(userData.email, "Purchase Confirmation", buyerEmailText);
+  console.log("Emails sent.");
+} catch (emailError) {
+  console.error("Email failed but purchase will continue:", emailError.message);
+}
 
-    // Step 7: Send response back to client
-    res.json({ message: "Book purchase successful! Emails sent." });
-
-  } catch (error) {
-    console.error("Error processing purchase:", error.stack || error.message);
-    res.status(500).json({ message: "Failed to purchase book. Please try again." });
-  }
+// Step 7: Send success response ALWAYS
+return res.json({
+  message: "Book purchase successful! (Email delivery may have failed)"
 });
+
+
 app.post('/api/exchange-book-request', async (req, res) => {
   const { bookId, exchanger, receiver, location } = req.body;
 
